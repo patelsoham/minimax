@@ -4,13 +4,13 @@ RUN = run
 
 TARGET = minmax
 
-all: run
+all: build run
 	
 run: $(TARGET)
 	./$(TARGET)
 
 build:
-	$(GO) $(BUILD) -o $(TARGET) $(TARGET).go
+	$(GO) $(BUILD) -o $(TARGET) *.go
 
 clean:
 	rm -f *.o minmax
