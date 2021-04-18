@@ -4,7 +4,7 @@ RUN = run
 
 TARGET = minmax
 
-all: build run
+all: clean build run
 	
 run: $(TARGET)
 	./$(TARGET)
