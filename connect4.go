@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 const (
@@ -11,6 +13,8 @@ const (
 	EMPTY_COLOR = "\033[1;37m%s\033[0m" //White
 	P1_COLOR    = "\033[1;31m%s\033[0m" //Red
 	P2_COLOR    = "\033[1;36m%s\033[0m" //Teal
+	MAX         = 2147483647
+	MIN         = -2147483648
 )
 
 var colors = []string{EMPTY_COLOR, P1_COLOR, P2_COLOR}
@@ -29,6 +33,12 @@ func getBitBoard(rows int, cols int) *BitBoard {
 	return &BitBoard{make([]int64, 2), rows, cols, 0}
 }
 
+func (b *BitBoard) copyBoard() *BitBoard {
+	new_boards := make([]int64, 2)
+	copy(new_boards, b.boards)
+	return &BitBoard{new_boards, b.rows, b.cols, b.heights}
+}
+
 func (b *BitBoard) modBoard(col int, player int, delta int) {
 	cur_height := ((0xF << uint(col*4)) & b.heights) >> uint(col*4)
 	//fmt.Printf("Before Placement: Col %d Player %d CurHeight %d\n", col, player, cur_height)
@@ -41,7 +51,8 @@ func (b *BitBoard) modBoard(col int, player int, delta int) {
 	}
 	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
 	if cur_height > b.rows || cur_height < 0 {
-		fmt.Printf("Invalid Height at col %d: %d\n", col, cur_height)
+		fmt.Printf("Invalid Height at col %d: %d made by player %d\n", col, cur_height, player)
+		b.printBoard()
 		panic(cur_height)
 	}
 	b.heights &= ^(0xF << uint(col*4))
@@ -85,6 +96,10 @@ func (b *BitBoard) printBoard() {
 		}
 		fmt.Printf("\n")
 	}
+	b.getHeights()
+}
+
+func (b *BitBoard) getHeights() {
 	fmt.Printf("Heights for each column \n")
 	for i := 0; i < b.cols; i++ {
 		fmt.Printf("%d ", ((0xF<<uint(i*4))&b.heights)>>uint(i*4))
@@ -130,9 +145,9 @@ func (b *Board) hasWon(player int) bool {
 
 func (b *Board) gameState() (int, int) {
 	if b.hasWon(P1) {
-		return 1, P1
+		return MAX, P1
 	} else if b.hasWon(P2) {
-		return 1, P2
+		return MIN, P2
 	} else if len(movesAvailable(b.heights, len(b.board), len(b.board[0]))) == 0 {
 		return 0, 0
 	}
@@ -165,17 +180,35 @@ func movesAvailable(heights int, height_lim int, max_moves int) []int {
 	return moves
 }
 
+func max(a int, b int) int {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func min(a int, b int) int {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
 func hello() {
 	player := 1
 	//board := getBoard(6, 7)
+	rand.Seed(time.Now().UnixNano())
 	board := getBitBoard(6, 7)
-	for j := 0; j < 7; j++ {
-		for i := 0; i < 6; i++ {
-			board.modBoard(j, player, 1)
-		}
+	for i := 0; i < 42; i++ {
+		avail_moves := movesAvailable(board.heights, board.rows, board.cols)
+		cur_col := rand.Intn(len(avail_moves))
+		board.modBoard(avail_moves[cur_col], player, 1)
 		player ^= 3
-
 	}
+	nb := board.copyBoard()
+	nb.printBoard()
 	fmt.Println(board.hasWon(1))
 	fmt.Println(board.gameState())
 	board.printBoard()
