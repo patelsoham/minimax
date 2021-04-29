@@ -73,13 +73,15 @@ func (b *BitBoard) hasWon(player int) bool {
 	return false
 }
 
-func (b *BitBoard) gameState() (int, int) {
+func (b *BitBoard) gameState(depth int, player int) (int, int) {
 	if b.hasWon(P1) {
-		return 1, P1
+		return MAX, P1
 	} else if b.hasWon(P2) {
-		return 1, P2
+		return MIN, P2
 	} else if len(movesAvailable(b.heights, b.rows, b.cols)) == 0 {
 		return 0, 0
+	} else if depth == 0 {
+		return b.scoreBoard(player), 0
 	}
 	return -1, -1
 }
@@ -110,8 +112,8 @@ func (b *BitBoard) getHeights() {
 
 func countBits(n int64) int {
 	count := 0
-	for (n > 0) {
-		n &= (n-1)
+	for n > 0 {
+		n &= (n - 1)
 		count++
 	}
 
@@ -125,22 +127,22 @@ func scoreWindow(window []int64, player int) int {
 		opp_player = P2
 	}
 
-	player_count := countBits(window[player>>1]) 
+	player_count := countBits(window[player>>1])
 	opp_player_count := countBits(window[opp_player>>1])
 	empty_count := 4 - player_count - opp_player_count
-	
+
 	if player_count == 4 {
-		score+= 100
+		score += 100
 	} else if player_count == 3 && empty_count == 1 {
-		score+= 5
+		score += 5
 	} else if player_count == 2 && empty_count == 2 {
-		score+= 2
+		score += 2
 	}
 
 	if opp_player_count == 3 && empty_count == 1 {
-		score-= 4
-	} 	
-	
+		score -= 4
+	}
+
 	return score
 }
 
@@ -152,10 +154,10 @@ func (b *BitBoard) scoreBoard(player int) int {
 		opp_player = P2
 	}
 
-	center_board := (b.boards[player >> 1] >> 21) & (0x7F)
+	center_board := (b.boards[player>>1] >> 21) & (0x7F)
 	center_count := countBits(center_board)
-	score+= center_count * 3
-	
+	score += center_count * 3
+
 	// next we will score windows of 4 spots at a time in the rows, columns and diagonals to calculate our score
 
 	windows := make([]int64, 2)
@@ -166,15 +168,15 @@ func (b *BitBoard) scoreBoard(player int) int {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
 
-			bit_pos := (1 << (r+ 7*c)) | (1 << (r + 7*(c+1))) | (1 << (r + 7*(c+2))) | (1 << (r + 7*(c+3)))
-			 
+			bit_pos := (1 << (r + 7*c)) | (1 << (r + 7*(c+1))) | (1 << (r + 7*(c+2))) | (1 << (r + 7*(c+3)))
+
 			curr_board_player &= int64(bit_pos)
 			curr_board_opp &= int64(bit_pos)
 
 			windows[player>>1] = curr_board_player
 			windows[opp_player>>1] = curr_board_opp
 
-			score+= scoreWindow(windows, player)
+			score += scoreWindow(windows, player)
 		}
 	}
 
@@ -184,17 +186,17 @@ func (b *BitBoard) scoreBoard(player int) int {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
 
-			start := c*7
+			start := c * 7
 
-			bit_pos := (1 << (start + r)) | (1 << (start + r+1)) | (1 << (start + r+2)) | (1 << (start + r+3))
-			 
+			bit_pos := (1 << (start + r)) | (1 << (start + r + 1)) | (1 << (start + r + 2)) | (1 << (start + r + 3))
+
 			curr_board_player &= int64(bit_pos)
 			curr_board_opp &= int64(bit_pos)
 
 			windows[player>>1] = curr_board_player
 			windows[opp_player>>1] = curr_board_opp
 
-			score+= scoreWindow(windows, player)
+			score += scoreWindow(windows, player)
 		}
 	}
 
@@ -207,14 +209,14 @@ func (b *BitBoard) scoreBoard(player int) int {
 			start := r + c*7
 
 			bit_pos := (1 << (start)) | (1 << (start + 8*1)) | (1 << (start + 8*2)) | (1 << (start + 8*3))
-			 
+
 			curr_board_player &= int64(bit_pos)
 			curr_board_opp &= int64(bit_pos)
 
 			windows[player>>1] = curr_board_player
 			windows[opp_player>>1] = curr_board_opp
 
-			score+= scoreWindow(windows, player)
+			score += scoreWindow(windows, player)
 		}
 	}
 
@@ -224,7 +226,7 @@ func (b *BitBoard) scoreBoard(player int) int {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
 
-			start := 5-r + c*7
+			start := 5 - r + c*7
 
 			bit_pos := (1 << (start)) | (1 << (start + 6*1)) | (1 << (start + 6*2)) | (1 << (start + 6*3))
 
@@ -234,7 +236,7 @@ func (b *BitBoard) scoreBoard(player int) int {
 			windows[player>>1] = curr_board_player
 			windows[opp_player>>1] = curr_board_opp
 
-			score+= scoreWindow(windows, player)
+			score += scoreWindow(windows, player)
 		}
 	}
 
@@ -270,26 +272,26 @@ func (b *Board) modBoard(col int, player int, delta int) {
 
 func (b *Board) hasWon(player int) bool {
 	//Horizontal
-	for c := 0; c < len(b.board[0]) - 3; c++ {
+	for c := 0; c < len(b.board[0])-3; c++ {
 		for r := 0; r < len(b.board); r++ {
 			if b.board[r][c] == player && b.board[r][c+1] == player && b.board[r][c+2] == player && b.board[r][c+3] == player {
 				fmt.Println("horizontal win")
 				return true
 			}
-		} 
+		}
 	}
 	//Vertical
-	for r := 0; r < len(b.board) - 3; r++ {
+	for r := 0; r < len(b.board)-3; r++ {
 		for c := 0; c < len(b.board[0]); c++ {
 			if b.board[r][c] == player && b.board[r+1][c] == player && b.board[r+2][c] == player && b.board[r+3][c] == player {
 				fmt.Println("vertical win")
 				return true
 			}
-		} 
+		}
 	}
 	//Ascending Diagonals (L->R), Descending Diagonals (R->L)
 	for r := 3; r < len(b.board); r++ {
-		for c := 0; c < len(b.board[0]) - 3; c++ {
+		for c := 0; c < len(b.board[0])-3; c++ {
 			if b.board[r][c] == player && b.board[r-1][c+1] == player && b.board[r-2][c+2] == player && b.board[r-3][c+3] == player {
 				fmt.Println("ascending diagonals")
 				return true
@@ -297,15 +299,15 @@ func (b *Board) hasWon(player int) bool {
 		}
 	}
 	//Descending Diagonals (L->R), Ascending Diagonals (R->L)
-	for r := 0; r < len(b.board) - 3; r++ {
-		for c := 0; c < len(b.board[0]) - 3; c++ {
+	for r := 0; r < len(b.board)-3; r++ {
+		for c := 0; c < len(b.board[0])-3; c++ {
 			if b.board[r][c] == player && b.board[r+1][c+1] == player && b.board[r+2][c+2] == player && b.board[r+3][c+3] == player {
 				fmt.Println("descending diagonals")
 				return true
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -376,6 +378,5 @@ func hello() {
 	nb := board.copyBoard()
 	nb.printBoard()
 	fmt.Println(board.hasWon(1))
-	fmt.Println(board.gameState())
 	board.printBoard()
 }
