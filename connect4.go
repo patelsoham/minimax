@@ -184,7 +184,7 @@ func (b *BitBoard) scoreBoard(player int) int {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
 
-			bit_pos := (1 << (r*7 + c)) | (1 << (r*7 + c+1)) | (1 << (r*7 + c+2)) | (1 << (r*7 + c+3))
+			bit_pos := (1 << (c*7 + r)) | (1 << (c*7 + r+1)) | (1 << (c*7 + r+2)) | (1 << (c*7 + r+3))
 			 
 			curr_board_player &= int64(bit_pos)
 			curr_board_opp &= int64(bit_pos)
