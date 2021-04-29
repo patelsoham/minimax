@@ -17,7 +17,7 @@ var per_10_mil time.Duration
 var st time.Time
 
 func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
-	game_res, player_res := b.gameState()
+	game_res, player_res := b.gameState(depth, player)
 	if game_res != -1 && player_res != -1 {
 		count += 1
 		if count%10000000 == 0 {
@@ -27,10 +27,6 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 			st = new_st
 		}
 		return game_res, player_res
-	}
-	if depth == 0 {
-		// we've reached the max tree depth, so use heuristic to give arbitrary score
-		return b.scoreBoard(player), 0
 	}
 	avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 	if player == P1 {
@@ -66,7 +62,7 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 }
 
 func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (int, int) {
-	game_res, player_res := b.gameState()
+	game_res, player_res := b.gameState(depth, player)
 	if game_res != -1 && player_res != -1 {
 		count += 1
 		if count%10000000 == 0 {
@@ -91,7 +87,7 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 				alpha = max(alpha, opt_val)
 			}
 			if beta <= alpha {
-				break
+				return opt_val, opt_move
 			}
 		}
 		return opt_val, opt_move
@@ -109,7 +105,7 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 				beta = min(beta, opt_val)
 			}
 			if beta <= alpha {
-				break
+				return opt_val, opt_move
 			}
 		}
 		return opt_val, opt_move
