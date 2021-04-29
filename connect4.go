@@ -20,7 +20,7 @@ const (
 var colors = []string{EMPTY_COLOR, P1_COLOR, P2_COLOR}
 
 type BitBoard struct {
-	boards              []int64 //two 64 bit integers (longs) for each player's board (lower 6 bits for every byte represent a col)
+	boards              []int64 //two 64 bit integers (longs) for each player's boardlik
 	rows, cols, heights int
 }
 

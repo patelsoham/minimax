@@ -7,8 +7,8 @@ import (
 )
 
 type move struct {
-	col    int
-	height int
+	val int
+	col int
 }
 
 var prev_moves []move
@@ -30,11 +30,11 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 	}
 	if depth == 0 {
 		// we've reached the max tree depth, so use heuristic to give arbitrary score
-		return b.scoreBoard(player), 0;
+		return b.scoreBoard(player), 0
 	}
+	avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 	if player == P1 {
 		opt_val := MIN
-		avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 		opt_move := rand.Intn(len(avail_moves))
 		for i := range avail_moves {
 			b.modBoard(avail_moves[i], player, 1)
@@ -48,7 +48,6 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 		return opt_val, opt_move
 	} else if player == P2 {
 		opt_val := MAX
-		avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 		opt_move := rand.Intn(len(avail_moves))
 		for i := range avail_moves {
 			b.modBoard(avail_moves[i], player, 1)
