@@ -158,9 +158,10 @@ func (b *BitBoard) scoreBoard(player int) int {
 	
 	// next we will score windows of 4 spots at a time in the rows, columns and diagonals to calculate our score
 
+	windows := make([]int64, 2)
+
 	// score rows
 	for r := uint(0); r < 6; r++ {
-		windows := make([]int64, 2)
 		for c := uint(0); c < 4; c++ {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
@@ -179,12 +180,13 @@ func (b *BitBoard) scoreBoard(player int) int {
 
 	// score cols
 	for c := uint(0); c < 7; c++ {
-		windows := make([]int64, 2)
 		for r := uint(0); r < 3; r++ {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
 
-			bit_pos := (1 << (c*7 + r)) | (1 << (c*7 + r+1)) | (1 << (c*7 + r+2)) | (1 << (c*7 + r+3))
+			start := c*7
+
+			bit_pos := (1 << (start + r)) | (1 << (start + r+1)) | (1 << (start + r+2)) | (1 << (start + r+3))
 			 
 			curr_board_player &= int64(bit_pos)
 			curr_board_opp &= int64(bit_pos)
@@ -197,16 +199,42 @@ func (b *BitBoard) scoreBoard(player int) int {
 	}
 
 	// score + diagonal
-	for r := uint(0); r < 4; r++ {
+	for r := uint(0); r < 3; r++ {
 		for c := uint(0); c < 4; c++ {
+			curr_board_player := b.boards[player>>1]
+			curr_board_opp := b.boards[opp_player>>1]
 
+			start := r + c*7
+
+			bit_pos := (1 << (start)) | (1 << (start + 8*1)) | (1 << (start + 8*2)) | (1 << (start + 8*3))
+			 
+			curr_board_player &= int64(bit_pos)
+			curr_board_opp &= int64(bit_pos)
+
+			windows[player>>1] = curr_board_player
+			windows[opp_player>>1] = curr_board_opp
+
+			score+= scoreWindow(windows, player)
 		}
 	}
 
 	// score - diagonal
-	for r := uint(0); r < 4; r++ {
+	for r := uint(0); r < 3; r++ {
 		for c := uint(0); c < 4; c++ {
+			curr_board_player := b.boards[player>>1]
+			curr_board_opp := b.boards[opp_player>>1]
 
+			start := 5-r + c*7
+
+			bit_pos := (1 << (start)) | (1 << (start + 6*1)) | (1 << (start + 6*2)) | (1 << (start + 6*3))
+
+			curr_board_player &= int64(bit_pos)
+			curr_board_opp &= int64(bit_pos)
+
+			windows[player>>1] = curr_board_player
+			windows[opp_player>>1] = curr_board_opp
+
+			score+= scoreWindow(windows, player)
 		}
 	}
 
