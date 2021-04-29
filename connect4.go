@@ -180,7 +180,7 @@ func (b *BitBoard) scoreBoard(player int) int {
 	// score cols
 	for c := uint(0); c < 7; c++ {
 		windows := make([]int64, 2)
-		for r := uint(0); r < 4; r++ {
+		for r := uint(0); r < 3; r++ {
 			curr_board_player := b.boards[player>>1]
 			curr_board_opp := b.boards[opp_player>>1]
 
