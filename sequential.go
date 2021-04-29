@@ -28,6 +28,10 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 		}
 		return game_res, player_res
 	}
+	if depth == 0 {
+		// we've reached the max tree depth, so use heuristic to give arbitrary score
+		return b.scoreBoard(player), 0;
+	}
 	if player == P1 {
 		opt_val := MIN
 		avail_moves := movesAvailable(b.heights, b.rows, b.cols)

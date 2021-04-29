@@ -108,6 +108,111 @@ func (b *BitBoard) getHeights() {
 	fmt.Printf("\n")
 }
 
+func countBits(n int64) int {
+	count := 0
+	for (n > 0) {
+		n &= (n-1)
+		count++
+	}
+
+	return count
+}
+
+func scoreWindow(window []int64, player int) int {
+	score := 0
+	opp_player := P1
+	if player == P1 {
+		opp_player = P2
+	}
+
+	player_count := countBits(window[player>>1]) 
+	opp_player_count := countBits(window[opp_player>>1])
+	empty_count := 4 - player_count - opp_player_count
+	
+	if player_count == 4 {
+		score+= 100
+	} else if player_count == 3 && empty_count == 1 {
+		score+= 5
+	} else if player_count == 2 && empty_count == 2 {
+		score+= 2
+	}
+
+	if opp_player_count == 3 && empty_count == 1 {
+		score-= 4
+	} 	
+	
+	return score
+}
+
+// logic obtained from https://github.com/KeithGalli/Connect4-Python/
+func (b *BitBoard) scoreBoard(player int) int {
+	score := 0
+	opp_player := P1
+	if player == P1 {
+		opp_player = P2
+	}
+
+	center_board := (b.boards[player >> 1] >> 21) & (0x7F)
+	center_count := countBits(center_board)
+	score+= center_count * 3
+	
+	// next we will score windows of 4 spots at a time in the rows, columns and diagonals to calculate our score
+
+	// score rows
+	for r := uint(0); r < 6; r++ {
+		windows := make([]int64, 2)
+		for c := uint(0); c < 4; c++ {
+			curr_board_player := b.boards[player>>1]
+			curr_board_opp := b.boards[opp_player>>1]
+
+			bit_pos := (1 << (r+ 7*c)) | (1 << (r + 7*(c+1))) | (1 << (r + 7*(c+2))) | (1 << (r + 7*(c+3)))
+			 
+			curr_board_player &= int64(bit_pos)
+			curr_board_opp &= int64(bit_pos)
+
+			windows[player>>1] = curr_board_player
+			windows[opp_player>>1] = curr_board_opp
+
+			score+= scoreWindow(windows, player)
+		}
+	}
+
+	// score cols
+	for c := uint(0); c < 7; c++ {
+		windows := make([]int64, 2)
+		for r := uint(0); r < 4; r++ {
+			curr_board_player := b.boards[player>>1]
+			curr_board_opp := b.boards[opp_player>>1]
+
+			bit_pos := (1 << (r*7 + c)) | (1 << (r*7 + c+1)) | (1 << (r*7 + c+2)) | (1 << (r*7 + c+3))
+			 
+			curr_board_player &= int64(bit_pos)
+			curr_board_opp &= int64(bit_pos)
+
+			windows[player>>1] = curr_board_player
+			windows[opp_player>>1] = curr_board_opp
+
+			score+= scoreWindow(windows, player)
+		}
+	}
+
+	// score + diagonal
+	for r := uint(0); r < 4; r++ {
+		for c := uint(0); c < 4; c++ {
+
+		}
+	}
+
+	// score - diagonal
+	for r := uint(0); r < 4; r++ {
+		for c := uint(0); c < 4; c++ {
+
+		}
+	}
+
+	return score
+}
+
 func getBoard(row int, col int) *Board {
 	arr := make([][]int, row)
 	for i := range arr {
