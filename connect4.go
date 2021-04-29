@@ -33,11 +33,11 @@ func (b *BitBoard) modBoard(col int, player int, delta int) {
 	cur_height := ((0xF << uint(col*4)) & b.heights) >> uint(col*4)
 	//fmt.Printf("Before Placement: Col %d Player %d CurHeight %d\n", col, player, cur_height)
 	if delta > 0 {
-		b.boards[player>>1] ^= (1 << uint(cur_height+(col*8)))
+		b.boards[player>>1] ^= (1 << uint(cur_height+(col*7)))
 		cur_height += delta
 	} else {
 		cur_height += delta
-		b.boards[player>>1] ^= (1 << uint(cur_height+(col*8)))
+		b.boards[player>>1] ^= (1 << uint(cur_height+(col*7)))
 	}
 	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
 	if cur_height > b.rows || cur_height < 0 {
@@ -48,9 +48,9 @@ func (b *BitBoard) modBoard(col int, player int, delta int) {
 	b.heights |= (cur_height << uint(col*4))
 }
 
-//Took this code from https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md
+//Took this optimization of hasWon from https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md
 func (b *BitBoard) hasWon(player int) bool {
-	var directions = []uint{1, 6, 7, 8}
+	var directions = []uint{1, 7, 6, 8}
 	cur_board := b.boards[player>>1]
 	var masked_board int64
 	for i := range directions {
@@ -78,18 +78,14 @@ func (b *BitBoard) printBoard() {
 	fmt.Printf("BitBoard\n")
 	for i := b.rows - 1; i >= 0; i-- {
 		for j := 0; j < b.cols; j++ {
-			cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*8))) >> uint(j*8)) >> uint(i)) & 1
-			cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*8))) >> uint(j*8)) >> uint(i)) & 1
+			cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
+			cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
 			//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
 			fmt.Printf(colors[cur_cell_1+(cur_cell_2*2)], "O ")
 		}
 		fmt.Printf("\n")
 	}
-	fmt.Printf("Heights for each column \n")
-	for i := 0; i < b.cols; i++ {
-		fmt.Printf("%d ", ((0xF<<uint(i*4))&b.heights)>>uint(i*4))
-	}
-	fmt.Printf("\n")
+	fmt.Printf("%.64b\n %.64b\n", b.boards[0], b.boards[1])
 }
 
 func getBoard(row int, col int) *Board {
@@ -121,10 +117,42 @@ func (b *Board) modBoard(col int, player int, delta int) {
 
 func (b *Board) hasWon(player int) bool {
 	//Horizontal
-
+	for c := 0; c < len(b.board[0]) - 3; c++ {
+		for r := 0; r < len(b.board); r++ {
+			if b.board[r][c] == player && b.board[r][c+1] == player && b.board[r][c+2] == player && b.board[r][c+3] == player {
+				fmt.Println("horizontal win")
+				return true
+			}
+		} 
+	}
 	//Vertical
-
-	//
+	for r := 0; r < len(b.board) - 3; r++ {
+		for c := 0; c < len(b.board[0]); c++ {
+			if b.board[r][c] == player && b.board[r+1][c] == player && b.board[r+2][c] == player && b.board[r+3][c] == player {
+				fmt.Println("vertical win")
+				return true
+			}
+		} 
+	}
+	//Ascending Diagonals (L->R), Descending Diagonals (R->L)
+	for r := 3; r < len(b.board); r++ {
+		for c := 0; c < len(b.board[0]) - 3; c++ {
+			if b.board[r][c] == player && b.board[r-1][c+1] == player && b.board[r-2][c+2] == player && b.board[r-3][c+3] == player {
+				fmt.Println("ascending diagonals")
+				return true
+			}
+		}
+	}
+	//Descending Diagonals (L->R), Ascending Diagonals (R->L)
+	for r := 0; r < len(b.board) - 3; r++ {
+		for c := 0; c < len(b.board[0]) - 3; c++ {
+			if b.board[r][c] == player && b.board[r+1][c+1] == player && b.board[r+2][c+2] == player && b.board[r+3][c+3] == player {
+				fmt.Println("descending diagonals")
+				return true
+			}
+		}
+	}
+	
 	return false
 }
 
@@ -169,12 +197,14 @@ func hello() {
 	player := 1
 	//board := getBoard(6, 7)
 	board := getBitBoard(6, 7)
-	for j := 0; j < 7; j++ {
-		for i := 0; i < 6; i++ {
-			board.modBoard(j, player, 1)
-		}
-		player ^= 3
-
+	for i := 0; i < 4; i++ {
+		for j := 0; j <= i; j++ {
+			if j == i  {
+				board.modBoard(i, player, 1)
+			} else {
+				board.modBoard(i, player ^ 3, 1)
+			}
+		} 
 	}
 	fmt.Println(board.hasWon(1))
 	fmt.Println(board.gameState())
