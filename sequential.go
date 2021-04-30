@@ -2,30 +2,19 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 )
 
-type move struct {
-	val int
-	col int
-}
-
-var prev_moves []move
 var count int64 = 0
 var per_10_mil time.Duration
 var st time.Time
 
 func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 	game_res, player_res := b.gameState(depth, player)
-	if game_res != -1 && player_res != -1 {
+	if game_res != -1 || player_res != -1 {
 		count += 1
-		if count%10000000 == 0 {
-			new_st := time.Now()
-			per_10_mil = new_st.Sub(st)
-			fmt.Printf("NAIVE: 10 million game states have been considered in %.5f, a total of %d game states considered\n", per_10_mil.Seconds(), count)
-			st = new_st
-		}
 		return game_res, player_res
 	}
 	avail_moves := movesAvailable(b.heights, b.rows, b.cols)
@@ -63,14 +52,8 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 
 func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (int, int) {
 	game_res, player_res := b.gameState(depth, player)
-	if game_res != -1 && player_res != -1 {
+	if game_res != -1 || player_res != -1 {
 		count += 1
-		if count%10000000 == 0 {
-			new_st := time.Now()
-			per_10_mil = new_st.Sub(st)
-			fmt.Printf("ALPHA-BETA: 10 million game states have been considered in %.5f, a total of %d game states considered\n", per_10_mil.Seconds(), count)
-			st = new_st
-		}
 		return game_res, player_res
 	}
 	if player == P1 {
@@ -87,6 +70,7 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 				alpha = max(alpha, opt_val)
 			}
 			if beta <= alpha {
+				metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 				return opt_val, opt_move
 			}
 		}
@@ -105,6 +89,7 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 				beta = min(beta, opt_val)
 			}
 			if beta <= alpha {
+				metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 				return opt_val, opt_move
 			}
 		}
@@ -115,16 +100,17 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 	}
 }
 
-func hello_seq() {
-	prev_moves = make([]move, 0)
-	fmt.Printf("Hello From Sequential Minimax\n")
+func seq(impl int, depth int) {
 	board := getBitBoard(6, 7)
-	player := 1
-	//fmt.Printf("Player 1: %d, Player 2: %d\n Player: %d, Player: %d\n", P1, P2, player, player^3)
+	game_res, player_res, player := 0, 0, 1
 	st = time.Now()
-	game_res, player_res := seq_minimax_ab(board, player, MIN, MAX, 10)
-	//game_res, player_res := seq_minimax(board, player, 10)
-	fmt.Printf("The game result %d for player %d\n", game_res, player_res)
+	if impl == SEQ {
+		fmt.Printf("Sequential Ran\n")
+		game_res, player_res = seq_minimax(board, player, depth)
+	} else if impl == SEQ_AB {
+		fmt.Printf("Sequential_AB Ran\n")
+		game_res, player_res = seq_minimax_ab(board, player, MIN, MAX, depth)
+	}
+	fmt.Printf("The game result %d for player %d. %d boards explored. %d nodes pruned\n", game_res, player_res, count, metrics.nodesPruned)
 	board.printBoard()
-
 }

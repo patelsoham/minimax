@@ -74,32 +74,48 @@ func (b *BitBoard) hasWon(player int) bool {
 }
 
 func (b *BitBoard) gameState(depth int, player int) (int, int) {
+	st := time.Now()
 	if b.hasWon(P1) {
+		metrics.gameState += time.Now().Sub(st)
 		return MAX, P1
 	} else if b.hasWon(P2) {
+		metrics.gameState += time.Now().Sub(st)
 		return MIN, P2
 	} else if len(movesAvailable(b.heights, b.rows, b.cols)) == 0 {
+		metrics.gameState += time.Now().Sub(st)
 		return 0, 0
 	} else if depth == 0 {
-		return b.scoreBoard(player), 0
+		score := b.scoreBoard(player)
+		//fmt.Printf("depth reached. Player %d given score of %d\n", player, score)
+		// b.printBoard()
+		metrics.gameState += time.Now().Sub(st)
+		return score, player
 	}
+	metrics.gameState += time.Now().Sub(st)
 	return -1, -1
 }
 
 //TODO: BitBoard printing
 func (b *BitBoard) printBoard() {
 	fmt.Printf("BitBoard\n")
+	// for i := b.rows - 1; i >= 0; i-- {
+	// 	for j := 0; j < b.cols; j++ {
+	// 		cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
+	// 		cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
+	// 		//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
+	// 		fmt.Printf(colors[cur_cell_1+(cur_cell_2*2)], "O ")
+	// 	}
+	// 	fmt.Printf("\n")
+	// }
 	for i := b.rows - 1; i >= 0; i-- {
 		for j := 0; j < b.cols; j++ {
 			cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
 			cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
 			//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
-			fmt.Printf(colors[cur_cell_1+(cur_cell_2*2)], "O ")
+			fmt.Printf("%d ", cur_cell_1+(cur_cell_2*2)-(1*cur_cell_2))
 		}
 		fmt.Printf("\n")
 	}
-	fmt.Printf("%.64b\n %.64b\n", b.boards[0], b.boards[1])
-	b.getHeights()
 }
 
 func (b *BitBoard) getHeights() {
@@ -122,10 +138,7 @@ func countBits(n int64) int {
 
 func scoreWindow(window []int64, player int) int {
 	score := 0
-	opp_player := P1
-	if player == P1 {
-		opp_player = P2
-	}
+	opp_player := player ^ 3
 
 	player_count := countBits(window[player>>1])
 	opp_player_count := countBits(window[opp_player>>1])
@@ -149,10 +162,7 @@ func scoreWindow(window []int64, player int) int {
 // logic obtained from https://github.com/KeithGalli/Connect4-Python/
 func (b *BitBoard) scoreBoard(player int) int {
 	score := 0
-	opp_player := P1
-	if player == P1 {
-		opp_player = P2
-	}
+	opp_player := player ^ 3
 
 	center_board := (b.boards[player>>1] >> 21) & (0x7F)
 	center_count := countBits(center_board)
@@ -240,6 +250,10 @@ func (b *BitBoard) scoreBoard(player int) int {
 		}
 	}
 
+	// player is the minimizer so we negate the score
+	if player == P2 {
+		score *= -1
+	}
 	return score
 }
 
@@ -364,19 +378,13 @@ func min(a int, b int) int {
 	}
 }
 
-func hello() {
+func test_helpers() {
 	player := 1
 	//board := getBoard(6, 7)
 	rand.Seed(time.Now().UnixNano())
 	board := getBitBoard(6, 7)
-	for i := 0; i < 42; i++ {
-		avail_moves := movesAvailable(board.heights, board.rows, board.cols)
-		cur_col := rand.Intn(len(avail_moves))
-		board.modBoard(avail_moves[cur_col], player, 1)
-		player ^= 3
-	}
-	nb := board.copyBoard()
-	nb.printBoard()
-	fmt.Println(board.hasWon(1))
-	board.printBoard()
+	board.modBoard(3, player, 1)
+	board.modBoard(3, player, 1)
+	score := board.scoreBoard(player)
+	fmt.Println(score)
 }
