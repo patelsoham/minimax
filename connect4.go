@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
+	"bufio"
+	"log"
+	"os"
+	"strings"
+	"strconv"
 )
 
 const (
@@ -33,6 +37,18 @@ func getBitBoard(rows int, cols int) *BitBoard {
 	return &BitBoard{make([]int64, 2), rows, cols, 0}
 }
 
+func strToBitBoard(game_state string) *BitBoard {
+	b := getBitBoard(6, 7)
+	player := 1
+	moves := strings.Split(game_state, "")
+	for col := range moves {
+		col_val, _ := strconv.ParseInt(moves[col], 10, 32)
+		b.modBoard(int(col_val)-1, player, 1)
+		player ^= 3
+	}
+	return b
+}
+
 func (b *BitBoard) copyBoard() *BitBoard {
 	new_boards := make([]int64, 2)
 	copy(new_boards, b.boards)
@@ -51,13 +67,16 @@ func (b *BitBoard) modBoard(col int, player int, delta int) {
 	}
 	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
 	if cur_height > b.rows || cur_height < 0 {
-		fmt.Printf("Invalid Height at col %d: %d made by player %d\n", col, cur_height, player)
+		fmt.Printf("Invalid Height at col %d: %d made by player %d. Must be at most %d\n", col, cur_height, player, b.rows)
 		b.printBoard()
+		b.getHeights()
+		fmt.Println(movesAvailable(b.heights, b.rows, b.cols))
 		panic(cur_height)
 	}
 	b.heights &= ^(0xF << uint(col*4))
 	b.heights |= (cur_height << uint(col*4))
 }
+
 
 //Took this optimization of hasWon from https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md
 func (b *BitBoard) hasWon(player int) bool {
@@ -86,8 +105,6 @@ func (b *BitBoard) gameState(depth int, player int) (int, int) {
 		return 0, 0
 	} else if depth == 0 {
 		score := b.scoreBoard(player)
-		//fmt.Printf("depth reached. Player %d given score of %d\n", player, score)
-		// b.printBoard()
 		metrics.gameState += time.Now().Sub(st)
 		return score, player
 	}
@@ -98,24 +115,24 @@ func (b *BitBoard) gameState(depth int, player int) (int, int) {
 //TODO: BitBoard printing
 func (b *BitBoard) printBoard() {
 	fmt.Printf("BitBoard\n")
-	// for i := b.rows - 1; i >= 0; i-- {
-	// 	for j := 0; j < b.cols; j++ {
-	// 		cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
-	// 		cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
-	// 		//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
-	// 		fmt.Printf(colors[cur_cell_1+(cur_cell_2*2)], "O ")
-	// 	}
-	// 	fmt.Printf("\n")
-	// }
 	for i := b.rows - 1; i >= 0; i-- {
 		for j := 0; j < b.cols; j++ {
 			cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
 			cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
 			//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
-			fmt.Printf("%d ", cur_cell_1+(cur_cell_2*2)-(1*cur_cell_2))
+			fmt.Printf(colors[cur_cell_1+(cur_cell_2*2)], "O ")
 		}
 		fmt.Printf("\n")
 	}
+	// for i := b.rows - 1; i >= 0; i-- {
+	// 	for j := 0; j < b.cols; j++ {
+	// 		cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
+	// 		cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
+	// 		//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
+	// 		fmt.Printf("%d ", cur_cell_1+(cur_cell_2*2)-(1*cur_cell_2))
+	// 	}
+	// 	fmt.Printf("\n")
+	// }
 }
 
 func (b *BitBoard) getHeights() {
@@ -278,6 +295,7 @@ func (b *Board) modBoard(col int, player int, delta int) {
 	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
 	if cur_height > len(b.board) || cur_height < 0 {
 		fmt.Printf("Invalid Height at col %d: %d\n", col, cur_height)
+		
 		panic(cur_height)
 	}
 	b.heights &= ^(0xF << uint(col*4))
@@ -379,12 +397,15 @@ func min(a int, b int) int {
 }
 
 func test_helpers() {
-	player := 1
-	//board := getBoard(6, 7)
-	rand.Seed(time.Now().UnixNano())
-	board := getBitBoard(6, 7)
-	board.modBoard(3, player, 1)
-	board.modBoard(3, player, 1)
-	score := board.scoreBoard(player)
-	fmt.Println(score)
+	file, err := os.Open("./testing/Test_L3_R1")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Scan()
+	game_state := strings.Split(scanner.Text(), " ")
+	b := strToBitBoard(game_state[0])
+	b.printBoard()
+	
 }
