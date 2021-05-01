@@ -52,7 +52,8 @@ func strToBitBoard(game_state string) *BitBoard {
 func (b *BitBoard) copyBoard() *BitBoard {
 	new_boards := make([]int64, 2)
 	copy(new_boards, b.boards)
-	return &BitBoard{new_boards, b.rows, b.cols, b.heights}
+	new_heights := b.heights
+	return &BitBoard{new_boards, b.rows, b.cols, new_heights}
 }
 
 func (b *BitBoard) modBoard(col int, player int, delta int) {

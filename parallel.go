@@ -13,13 +13,15 @@ var PERCENT_PARALLEL float64 = 1 - PERCENT_SEQ
 
 type move struct {
 	val int
+	player int
 	col int
 }
 
-func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan move) {
+func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, col int, ret chan move) {
 	game_res, player_res := b.gameState(depth, player)
 	if game_res != -1 || player_res != -1 {
-		ret <- move{game_res, player_res}
+		count += 1
+		ret <- move{game_res, player_res, col}
 	}
 	avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 	if player == P1 {
@@ -36,7 +38,7 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 					opt_move = avail_moves[i]
 				}
 			}
-			ret <- move{opt_val, opt_move}
+			ret <- move{opt_val, player, opt_move}
 		} else {
 			//launch goroutines and compute in parallel
 			result := make(chan move)
@@ -45,7 +47,7 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 			for i := range avail_moves {
 				nb := b.copyBoard()
 				nb.modBoard(avail_moves[i], player, 1)
-				go parallel_minimax(nb, player^3, depth-1, pdepth-1, result)
+				go parallel_minimax(nb, player^3, depth-1, pdepth-1, avail_moves[i], result)
 			}
 			for i := 0; i < len(avail_moves); i++ {
 				cur_res := <-result
@@ -54,7 +56,7 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 					opt_move = cur_res.col
 				}
 			}
-			ret <- move{opt_val, opt_move}
+			ret <- move{opt_val, player, opt_move}
 		}
 	} else if player == P2 {
 		if pdepth == 0 {
@@ -70,7 +72,7 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 					opt_move = avail_moves[i]
 				}
 			}
-			ret <- move{opt_val, opt_move}
+			ret <- move{opt_val, player, opt_move}
 		} else {
 			//launch goroutines and compute in parallel
 			result := make(chan move)
@@ -79,7 +81,7 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 			for i := range avail_moves {
 				nb := b.copyBoard()
 				nb.modBoard(avail_moves[i], player, 1)
-				go parallel_minimax(nb, player^3, depth-1, pdepth-1, result)
+				go parallel_minimax(nb, player^3, depth-1, pdepth-1, avail_moves[i], result)
 			}
 			//not sure if this is correct or not -> maybe for cur_res := range result {...}
 			for i := 0; i < len(avail_moves); i++ {
@@ -89,7 +91,7 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 					opt_move = cur_res.col
 				}
 			}
-			ret <- move{opt_val, opt_move}
+			ret <- move{opt_val, player, opt_move}
 		}
 	} else {
 		fmt.Printf("Invalid player number %d\n", player)
@@ -98,13 +100,14 @@ func parallel_minimax(b *BitBoard, player int, depth int, pdepth int, ret chan m
 }
 
 //TODO:
-func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha int, beta int, ret chan move, doReturn bool) move {
+func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha int, beta int, col int, ret chan move, doReturn bool) move {
 	game_res, player_res := b.gameState(depth, player)
 	if game_res != -1 || player_res != -1 {
+		count += 1
 		if !doReturn {
-			ret <- move{game_res, player_res}
+			ret <- move{game_res, player_res, col}
 		}
-		return move{game_res, player_res}
+		return move{game_res, player_res, col}
 	}
 	avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 	if player == P1 {
@@ -118,20 +121,20 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				if val > opt_val {
 					opt_val = val
 					opt_move = avail_moves[i]
-					alpha = max(alpha, opt_val)
 				}
+				alpha = max(alpha, opt_val)
 				if beta <= alpha {
 					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
-						ret <- move{opt_val, opt_move}
+						ret <- move{opt_val, player, opt_move}
 					}
-					return move{opt_val, opt_move}
+					return move{opt_val, player, opt_move}
 				}
 			}
 			if !doReturn {
-				ret <- move{opt_val, opt_move}
+				ret <- move{opt_val, player, opt_move}
 			}
-			return move{opt_val, opt_move}
+			return move{opt_val, player, opt_move}
 		} else {
 			opt_val := MIN
 			opt_move := avail_moves[rand.Intn(len(avail_moves))]
@@ -140,24 +143,24 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 			for i := 0; i < int(PERCENT_SEQ*float64(len(avail_moves))); i++ {
 				nb := b.copyBoard()
 				nb.modBoard(avail_moves[i], player, 1)
-				cur_result := parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, result, true)
+				cur_result := parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, true)
 				if cur_result.val > opt_val {
 					opt_val = cur_result.val
 					opt_move = cur_result.col
-					alpha = max(alpha, opt_val)
 				}
+				alpha = max(alpha, opt_val)
 				if beta <= alpha {
 					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
-						ret <- move{opt_val, opt_move}
+						ret <- move{opt_val, player, opt_move}
 					}
-					return move{opt_val, opt_move}
+					return move{opt_val, player, opt_move}
 				}
 			}
 			for i := int(PERCENT_SEQ * float64(len(avail_moves))); i < len(avail_moves); i++ {
 				nb := b.copyBoard()
 				nb.modBoard(avail_moves[i], player, 1)
-				go parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, result, false)
+				go parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, false)
 			}
 			//Gather step for minimax
 			for i := int(PERCENT_SEQ * float64(len(avail_moves))); i < len(avail_moves); i++ {
@@ -165,20 +168,20 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				if cur_result.val > opt_val {
 					opt_val = cur_result.val
 					opt_move = cur_result.col
-					alpha = max(alpha, opt_val)
 				}
+				alpha = max(alpha, opt_val)
 				if beta <= alpha {
 					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
-						ret <- move{opt_val, opt_move}
+						ret <- move{opt_val, player, opt_move}
 					}
-					return move{opt_val, opt_move}
+					return move{opt_val, player, opt_move}
 				}
 			}
 			if !doReturn {
-				ret <- move{opt_val, opt_move}
+				ret <- move{opt_val, player, opt_move}
 			}
-			return move{opt_val, opt_move}
+			return move{opt_val, player, opt_move}
 		}
 	} else if player == P2 {
 		if pdepth == 0 {
@@ -191,20 +194,20 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				if val < opt_val {
 					opt_val = val
 					opt_move = avail_moves[i]
-					beta = min(beta, opt_val)
 				}
+				beta = min(beta, opt_val)
 				if beta <= alpha {
 					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
-						ret <- move{opt_val, opt_move}
+						ret <- move{opt_val, player, opt_move}
 					}
-					return move{opt_val, opt_move}
+					return move{opt_val, player, opt_move}
 				}
 			}
 			if !doReturn {
-				ret <- move{opt_val, opt_move}
+				ret <- move{opt_val, player, opt_move}
 			}
-			return move{opt_val, opt_move}
+			return move{opt_val, player, opt_move}
 		} else {
 			opt_val := MAX
 			opt_move := avail_moves[rand.Intn(len(avail_moves))]
@@ -213,25 +216,25 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 			//we don't need to make a copy of the board because the moves are done sequentially
 			for i := 0; i < int(PERCENT_SEQ*float64(len(avail_moves))); i++ {
 				b.modBoard(avail_moves[i], player, 1)
-				cur_result := parallel_minimax_ab(b, player^3, depth-1, pdepth-1, alpha, beta, result, true)
+				cur_result := parallel_minimax_ab(b, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, true)
 				b.modBoard(avail_moves[i], player, -1)
 				if cur_result.val < opt_val {
 					opt_val = cur_result.val
 					opt_move = cur_result.col
-					beta = min(beta, opt_val)
 				}
+				beta = min(beta, opt_val)
 				if beta <= alpha {
 					metrics.nodesPruned += (len(avail_moves) - i - 1) * int(math.Pow(7, float64(depth)-1)/6)
 					if !doReturn {
-						ret <- move{opt_val, opt_move}
+						ret <- move{opt_val, player, opt_move}
 					}
-					return move{opt_val, opt_move}
+					return move{opt_val, player, opt_move}
 				}
 			}
 			for i := int(PERCENT_SEQ * float64(len(avail_moves))); i < len(avail_moves); i++ {
 				nb := b.copyBoard()
 				nb.modBoard(avail_moves[i], player, 1)
-				go parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, result, false)
+				go parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, false)
 			}
 			//TODO: This needs some way of knowing whether a result is coming from a "break" due to alpha/beta or not
 			for i := int(PERCENT_SEQ * float64(len(avail_moves))); i < len(avail_moves); i++ {
@@ -239,20 +242,20 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				if cur_result.val < opt_val {
 					opt_val = cur_result.val
 					opt_move = cur_result.col
-					beta = min(beta, opt_val)
 				}
+				beta = min(beta, opt_val)
 				if beta <= alpha {
 					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
-						ret <- move{opt_val, opt_move}
+						ret <- move{opt_val, player, opt_move}
 					}
-					return move{opt_val, opt_move}
+					return move{opt_val, player, opt_move}
 				}
 			}
 			if !doReturn {
-				ret <- move{opt_val, opt_move}
+				ret <- move{opt_val, player, opt_move}
 			}
-			return move{opt_val, opt_move}
+			return move{opt_val, player, opt_move}
 		}
 	} else {
 		fmt.Printf("Invalid player number %d\n", player)
@@ -269,7 +272,7 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 		ret := make(chan move)
 		g1, g2 := board.gameState(player, MAX)
 		for g1 == -1 && g2 == -1 {
-			go parallel_minimax(board, player, depth, pdepth, ret)
+			go parallel_minimax(board, player, depth, pdepth, rand.Intn(7), ret)
 			result := <-ret
 			game_res, cur_move = result.val, result.col
 			fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
@@ -286,7 +289,7 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 		PERCENT_PARALLEL = 1 - PERCENT_SEQ
 		g1, g2 := board.gameState(player, MAX)
 		for g1 == -1 && g2 == -1 {
-			go parallel_minimax_ab(board, player, depth, pdepth, MIN, MAX, ret, false)
+			go parallel_minimax_ab(board, player, depth, pdepth, MIN, MAX, rand.Intn(7), ret, false)
 			result := <-ret
 			game_res, cur_move = result.val, result.col
 			fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
