@@ -3,14 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math"
 	"time"
 )
 
 type benchmarks struct {
 	endtoend    time.Duration
 	gameState   time.Duration
-	nodesPruned int
+}
+
+func incrementGameState(toAdd time.Duration) {
+	metrics.gameState += toAdd
+}
+
+func getGameState() float64 {
+	return metrics.gameState.Seconds()
 }
 
 var metrics benchmarks
@@ -25,7 +31,7 @@ const (
 
 func main() {
 	impl, depth, pdepth, ab_percent_sequential := 0, 0, 0, 0.0
-	metrics := benchmarks{0, 0, 0}
+	metrics := benchmarks{0, 0}
 	flag.IntVar(&impl, "i", 0, "which implementation to run: 0 = sequential, 1 = sequential_ab, 2 = parallel, 3 = parallel_ab")
 	flag.IntVar(&depth, "d", 5, "max depth of algorithms")
 	flag.IntVar(&pdepth, "pd", -1, "max depth computed in parallel")
@@ -47,7 +53,5 @@ func main() {
 	}
 	metrics.endtoend += time.Now().Sub(st)
 	// print metrics
-	percentagePruned := float64(metrics.nodesPruned) / ((math.Pow(7, float64(depth)-1)) / 6)
-	fmt.Printf("End to End Time: %.5f\nGame State Computation Time: %.10f\nNumber of Nodes Pruned: %d\nPercentage Nodes Pruned: %0.5f\n",
-		metrics.endtoend.Seconds(), metrics.gameState.Seconds(), metrics.nodesPruned, percentagePruned)
+	fmt.Printf("End to End Time: %.5f\nGame State Computation Time: %.10f\n", metrics.endtoend.Seconds(), getGameState())
 }

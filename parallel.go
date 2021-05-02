@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"time"
 )
@@ -112,7 +111,6 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				} 
 				alpha = max(alpha, opt_val)
 				if beta <= alpha {
-					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
 						ret <- move{opt_val, player, opt_move, col}
 					}
@@ -140,7 +138,6 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				}
 				alpha = max(alpha, opt_val)
 				if beta <= alpha {
-					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
 						ret <- move{opt_val, player, opt_move, col}
 					}
@@ -163,7 +160,6 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				}
 				alpha = max(alpha, opt_val)
 				if beta <= alpha {
-					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
 						ret <- move{opt_val, player, opt_move, col}
 					}
@@ -189,7 +185,6 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				}
 				beta = min(beta, opt_val)
 				if beta <= alpha {
-					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
 						ret <- move{opt_val, player, opt_move, col}
 					}
@@ -218,7 +213,6 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				}
 				beta = min(beta, opt_val)
 				if beta <= alpha {
-					metrics.nodesPruned += (len(avail_moves) - i - 1) * int(math.Pow(7, float64(depth)-1)/6)
 					if !doReturn {
 						ret <- move{opt_val, player, opt_move, col}
 					}
@@ -241,7 +235,6 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 				}
 				beta = min(beta, opt_val)
 				if beta <= alpha {
-					metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 					if !doReturn {
 						ret <- move{opt_val, player, opt_move, col}
 					}
@@ -301,6 +294,6 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 	}
 	fmt.Printf("Total Moves Required: %d\n", len(moves))
 	fmt.Println(moves)
-	fmt.Printf("The game result %d for player %d. %d boards explored. %d nodes pruned\n", game_res, player_res, count, metrics.nodesPruned)
+	fmt.Printf("The game result %d for player %d. %d boards explored.\n", game_res, player_res, count)
 	board.printBoard()
 }

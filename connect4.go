@@ -97,20 +97,20 @@ func (b *BitBoard) hasWon(player int) bool {
 func (b *BitBoard) gameState(depth int, player int) (int, int) {
 	st := time.Now()
 	if b.hasWon(P1) {
-		metrics.gameState += time.Now().Sub(st)
+		incrementGameState(time.Now().Sub(st))
 		return MAX, P1
 	} else if b.hasWon(P2) {
-		metrics.gameState += time.Now().Sub(st)
+		incrementGameState(time.Now().Sub(st))
 		return MIN, P2
 	} else if len(movesAvailable(b.heights, b.rows, b.cols)) == 0 {
-		metrics.gameState += time.Now().Sub(st)
+		incrementGameState(time.Now().Sub(st))
 		return 0, 0
 	} else if depth == 0 {
 		score := b.scoreBoard(player)
-		metrics.gameState += time.Now().Sub(st)
+		incrementGameState(time.Now().Sub(st))
 		return score, player
 	}
-	metrics.gameState += time.Now().Sub(st)
+	incrementGameState(time.Now().Sub(st))
 	return -1, -1
 }
 

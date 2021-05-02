@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"time"
 )
@@ -71,7 +70,6 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 			}
 			alpha = max(alpha, opt_val)
 			if beta <= alpha {
-				metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 				return opt_val, opt_move
 			}
 		}
@@ -91,7 +89,6 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 			}
 			beta = min(beta, opt_val)
 			if beta <= alpha {
-				metrics.nodesPruned += (len(avail_moves) - i - 1) * int((math.Pow(7, float64(depth))-1)/6)
 				return opt_val, opt_move
 			}
 		}
@@ -136,6 +133,6 @@ func seq(impl int, depth int) {
 	}
 	fmt.Printf("Total Moves Required: %d\n", len(moves))
 	fmt.Println(moves)
-	fmt.Printf("The game result %d for player %d. %d boards explored. %d nodes pruned\n", game_res, player_res, count, metrics.nodesPruned)
+	fmt.Printf("The game result %d for player %d. %d boards explored.\n", game_res, player_res, count)
 	board.printBoard()
 }
