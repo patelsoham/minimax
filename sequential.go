@@ -36,9 +36,9 @@ func seq_minimax(b *BitBoard, player int, depth int) (int, int) {
 		opt_val := MAX
 		opt_move := avail_moves[rand.Intn(len(avail_moves))]
 		for i := range avail_moves {
-			nb := b.copyBoard()
-			nb.modBoard(avail_moves[i], player, 1)
-			val, _ := seq_minimax(nb, player^3, depth-1)
+			b.modBoard(avail_moves[i], player, 1)
+			val, _ := seq_minimax(b, player^3, depth-1)
+			b.modBoard(avail_moves[i], player, -1)
 			if val < opt_val {
 				opt_val = val
 				opt_move = avail_moves[i]
@@ -112,7 +112,7 @@ func seq(impl int, depth int) {
 		g1, g2 := board.gameState(MAX, player)
 		for g1 == -1 && g2 == -1 {
 			game_res, move = seq_minimax(board, player, depth)
-			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			//fmt.Printf("Move %d is placing in column %d by player %d with value %d\n", moves_count, move, player, game_res)
 			moves = append(moves, move)
 			board.modBoard(move, player, 1)
 			player ^= 3
