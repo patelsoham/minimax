@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -11,8 +12,13 @@ type benchmarks struct {
 	gameState   time.Duration
 }
 
+var lock sync.Mutex
+
 func incrementGameState(toAdd time.Duration) {
+	return // comment this line to calculate the amount time spent calculating the game state for metrics 
+	lock.Lock()
 	metrics.gameState += toAdd
+	lock.Unlock()
 }
 
 func getGameState() float64 {

@@ -99,24 +99,7 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 	avail_moves := movesAvailable(b.heights, b.rows, b.cols)
 	if player == P1 {
 		if pdepth == 0 {
-			opt_val := MIN
-			opt_move := avail_moves[rand.Intn(len(avail_moves))]
-			for i := range avail_moves {
-				b.modBoard(avail_moves[i], player, 1)
-				val, _ := seq_minimax_ab(b, P2, alpha, beta, depth-1)
-				b.modBoard(avail_moves[i], player, -1)
-				if val > opt_val {
-					opt_val = val
-					opt_move = avail_moves[i]
-				} 
-				alpha = max(alpha, opt_val)
-				if beta <= alpha {
-					if !doReturn {
-						ret <- move{opt_val, player, opt_move, col}
-					}
-					return move{opt_val, player, opt_move, col}
-				}
-			}
+			opt_val, opt_move := seq_minimax_ab(b, player, alpha, beta, depth)
 			if !doReturn {
 				ret <- move{opt_val, player, opt_move, col}
 			}
@@ -173,24 +156,7 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 		}
 	} else if player == P2 {
 		if pdepth == 0 {
-			opt_val := MAX
-			opt_move := avail_moves[rand.Intn(len(avail_moves))]
-			for i := range avail_moves {
-				b.modBoard(avail_moves[i], player, 1)
-				val, _ := seq_minimax_ab(b, P1, alpha, beta, depth-1)
-				b.modBoard(avail_moves[i], player, -1)
-				if val < opt_val {
-					opt_val = val
-					opt_move = avail_moves[i]
-				}
-				beta = min(beta, opt_val)
-				if beta <= alpha {
-					if !doReturn {
-						ret <- move{opt_val, player, opt_move, col}
-					}
-					return move{opt_val, player, opt_move, col}
-				}
-			}
+			opt_val, opt_move := seq_minimax_ab(b, player, alpha, beta, depth)
 			if !doReturn {
 				ret <- move{opt_val, player, opt_move, col}
 			}
