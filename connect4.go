@@ -24,7 +24,7 @@ const (
 var colors = []string{EMPTY_COLOR, P1_COLOR, P2_COLOR}
 
 type BitBoard struct {
-	boards              []int64 //two 64 bit integers (longs) for each player's boardlik
+	boards              []int64 //two 64 bit integers (longs) for each player's board
 	rows, cols, heights int
 }
 
@@ -37,13 +37,14 @@ func getBitBoard(rows int, cols int) *BitBoard {
 	return &BitBoard{make([]int64, 2), rows, cols, 0}
 }
 
-func strToBitBoard(game_state string) *BitBoard {
+func strToBitBoard(game_state string, sep string) *BitBoard {
 	b := getBitBoard(6, 7)
 	player := 1
-	moves := strings.Split(game_state, "")
+	moves := strings.Split(game_state, sep)
+	fmt.Println(moves)
 	for col := range moves {
 		col_val, _ := strconv.ParseInt(moves[col], 10, 32)
-		b.modBoard(int(col_val)-1, player, 1)
+		b.modBoard(int(col_val), player, 1)
 		player ^= 3
 	}
 	return b
@@ -398,15 +399,12 @@ func min(a int, b int) int {
 }
 
 func test_helpers() {
-	file, err := os.Open("./testing/Test_L3_R1")
+	file, err := os.Open("./testing/temp.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
-	game_state := strings.Split(scanner.Text(), " ")
-	b := strToBitBoard(game_state[0])
-	b.printBoard()
-	
+	//game_state := scanner.Text()
 }

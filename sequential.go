@@ -106,32 +106,36 @@ func seq(impl int, depth int) {
 	board := getBitBoard(6, 7)
 	st = time.Now()
 	game_res, player_res, move, player := 0, 0, 0, 1
+	moves := make([]int, 0)
 	if impl == SEQ {
 		fmt.Printf("Sequential Ran\n")
-		g1, g2 := board.gameState(player, MAX)
+		g1, g2 := board.gameState(MAX, player)
 		for g1 == -1 && g2 == -1 {
 			game_res, move = seq_minimax(board, player, depth)
-			fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			moves = append(moves, move)
 			board.modBoard(move, player, 1)
 			player ^= 3
 			moves_count += 1
-			g1, g2 = board.gameState(player, MAX)
+			g1, g2 = board.gameState(MAX, player)
 		}
-		game_res, player_res = board.gameState(player, MAX)
+		game_res, player_res = board.gameState(MAX, player)
 	} else if impl == SEQ_AB {
 		fmt.Printf("Sequential_AB Ran\n")
-		g1, g2 := board.gameState(player, MAX)
+		g1, g2 := board.gameState(MAX, player)
 		for g1 == -1 && g2 == -1 {
 			game_res, move = seq_minimax_ab(board, player, MIN, MAX, depth)
-			fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			moves = append(moves, move)
 			board.modBoard(move, player, 1)
 			player ^= 3
 			moves_count += 1
-			g1, g2 = board.gameState(player, MAX)
+			g1, g2 = board.gameState(MAX, player)
 		}
-		game_res, player_res = board.gameState(player, MAX)
+		game_res, player_res = board.gameState(MAX, player)
 	}
-	fmt.Printf("Player %d Wins\n", player_res)
+	fmt.Printf("Total Moves Required: %d\n", len(moves))
+	fmt.Println(moves)
 	fmt.Printf("The game result %d for player %d. %d boards explored. %d nodes pruned\n", game_res, player_res, count, metrics.nodesPruned)
 	board.printBoard()
 }

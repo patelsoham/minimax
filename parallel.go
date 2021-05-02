@@ -215,9 +215,9 @@ func parallel_minimax_ab(b *BitBoard, player int, depth int, pdepth int, alpha i
 			//compute percentage of tree sequentially to utilize alpha-beta pruning (principle variation search)
 			//we don't need to make a copy of the board because the moves are done sequentially
 			for i := 0; i < int(PERCENT_SEQ*float64(len(avail_moves))); i++ {
-				b.modBoard(avail_moves[i], player, 1)
-				cur_result := parallel_minimax_ab(b, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, true)
-				b.modBoard(avail_moves[i], player, -1)
+				nb := b.copyBoard()
+				nb.modBoard(avail_moves[i], player, 1)
+				cur_result := parallel_minimax_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, true)
 				if cur_result.val < opt_val {
 					opt_val = cur_result.val
 					opt_move = cur_result.col
@@ -267,6 +267,7 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 	board := getBitBoard(6, 7)
 	game_res, player_res, cur_move, player := 0, 0, 0, 1
 	st = time.Now()
+	moves := make([]int, 0)
 	if impl == PARALLEL {
 		fmt.Printf("Parallel Ran\n")
 		ret := make(chan move)
@@ -275,31 +276,35 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 			go parallel_minimax(board, player, depth, pdepth, rand.Intn(7), ret)
 			result := <-ret
 			game_res, cur_move = result.val, result.col
-			fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
+			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
+			moves = append(moves, cur_move)
 			board.modBoard(cur_move, player, 1)
 			player ^= 3
 			moves_count += 1
-			g1, g2 = board.gameState(player, MAX)
+			g1, g2 = board.gameState(MAX, player)
 		}
-		game_res, player_res = board.gameState(player, MAX)
+		game_res, player_res = board.gameState(MAX, player)
 	} else if impl == PARALLEL_AB {
 		fmt.Printf("Parallel_AB Ran\n")
 		ret := make(chan move)
 		PERCENT_SEQ = percent_ab
 		PERCENT_PARALLEL = 1 - PERCENT_SEQ
-		g1, g2 := board.gameState(player, MAX)
+		g1, g2 := board.gameState(MAX, player)
 		for g1 == -1 && g2 == -1 {
 			go parallel_minimax_ab(board, player, depth, pdepth, MIN, MAX, rand.Intn(7), ret, false)
 			result := <-ret
 			game_res, cur_move = result.val, result.col
-			fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
+			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
+			moves = append(moves, cur_move)
 			board.modBoard(cur_move, player, 1)
 			player ^= 3
 			moves_count += 1
-			g1, g2 = board.gameState(player, MAX)
+			g1, g2 = board.gameState(MAX, player)
 		}
-		game_res, player_res = board.gameState(player, MAX)
+		game_res, player_res = board.gameState(MAX, player)
 	}
+	fmt.Printf("Total Moves Required: %d\n", len(moves))
+	fmt.Println(moves)
 	fmt.Printf("The game result %d for player %d. %d boards explored. %d nodes pruned\n", game_res, player_res, count, metrics.nodesPruned)
 	board.printBoard()
 }
