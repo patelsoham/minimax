@@ -27,6 +27,7 @@ func getGameState() float64 {
 
 var metrics benchmarks
 var moves_count int = 0
+var debug int = 0
 
 const (
 	SEQ         = iota
@@ -42,6 +43,7 @@ func main() {
 	flag.IntVar(&impl, "i", 0, "which implementation to run: 0 = sequential, 1 = sequential_ab, 2 = parallel, 3 = parallel_ab")
 	flag.IntVar(&depth, "d", 5, "max depth of algorithms")
 	flag.IntVar(&pdepth, "pd", -1, "max depth computed in parallel")
+	flag.IntVar(&debug, "debug", 0, "include debug printing")
 	flag.Float64Var(&ab_percent_sequential, "ab", 0.5, "percentage of the parallel AB solution done in sequential")
 	flag.Parse()
 	if pdepth == -1 || pdepth > depth {
@@ -51,12 +53,11 @@ func main() {
 	st := time.Now()
 	switch {
 	case impl < 2:
-		seq(impl, depth)
+		seq(impl, depth, debug)
 	case impl >= 2 && impl < NUM_IMPL:
-		parallel(impl, depth, pdepth, ab_percent_sequential)
+		parallel(impl, depth, pdepth, ab_percent_sequential, debug)
 	default:
 		fmt.Println("Default case entered")
-		test_helpers()
 	}
 	metrics.endtoend += time.Now().Sub(st)
 	// print metrics

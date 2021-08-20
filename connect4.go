@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -59,7 +56,7 @@ func (b *BitBoard) copyBoard() *BitBoard {
 
 func (b *BitBoard) modBoard(col int, player int, delta int) {
 	cur_height := ((0xF << uint(col*4)) & b.heights) >> uint(col*4)
-	//fmt.Printf("Before Placement: Col %d Player %d CurHeight %d\n", col, player, cur_height)
+
 	if delta > 0 {
 		b.boards[player>>1] ^= (1 << uint(cur_height+(col*7)))
 		cur_height += delta
@@ -67,7 +64,7 @@ func (b *BitBoard) modBoard(col int, player int, delta int) {
 		cur_height += delta
 		b.boards[player>>1] ^= (1 << uint(cur_height+(col*7)))
 	}
-	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
+	
 	if cur_height > b.rows || cur_height < 0 {
 		fmt.Printf("Invalid Height at col %d: %d made by player %d. Must be at most %d\n", col, cur_height, player, b.rows)
 		b.printBoard()
@@ -113,27 +110,16 @@ func (b *BitBoard) gameState(depth int, player int) (int, int) {
 	return -1, -1
 }
 
-//TODO: BitBoard printing
 func (b *BitBoard) printBoard() {
 	fmt.Printf("BitBoard\n")
 	for i := b.rows - 1; i >= 0; i-- {
 		for j := 0; j < b.cols; j++ {
 			cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
 			cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
-			//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
 			fmt.Printf(colors[cur_cell_1+(cur_cell_2*2)], "O ")
 		}
 		fmt.Printf("\n")
 	}
-	// for i := b.rows - 1; i >= 0; i-- {
-	// 	for j := 0; j < b.cols; j++ {
-	// 		cur_cell_1 := ((((b.boards[0]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
-	// 		cur_cell_2 := ((((b.boards[1]) & (0xFF << uint(j*7))) >> uint(j*7)) >> uint(i)) & 1
-	// 		//fmt.Printf("Row %d, Col %d, p1 %d p2 %d ind %d\n", i, j, cur_cell_1, cur_cell_2, cur_cell_1+(cur_cell_2*2))
-	// 		fmt.Printf("%d ", cur_cell_1+(cur_cell_2*2)-(1*cur_cell_2))
-	// 	}
-	// 	fmt.Printf("\n")
-	// }
 }
 
 func (b *BitBoard) getHeights() {
@@ -285,7 +271,6 @@ func getBoard(row int, col int) *Board {
 
 func (b *Board) modBoard(col int, player int, delta int) {
 	cur_height := ((0xF << uint(col*4)) & b.heights) >> uint(col*4)
-	//fmt.Printf("Before Placement: Col %d Player %d CurHeight %d\n", col, player, cur_height)
 	if delta > 0 {
 		b.board[len(b.board)-cur_height-1][col] = player
 		cur_height += delta
@@ -293,7 +278,6 @@ func (b *Board) modBoard(col int, player int, delta int) {
 		cur_height += delta
 		b.board[len(b.board)-cur_height-1][col] = player
 	}
-	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
 	if cur_height > len(b.board) || cur_height < 0 {
 		fmt.Printf("Invalid Height at col %d: %d\n", col, cur_height)
 
@@ -395,15 +379,4 @@ func min(a int, b int) int {
 	} else {
 		return b
 	}
-}
-
-func test_helpers() {
-	file, err := os.Open("./testing/temp.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	scanner.Scan()
-	//game_state := scanner.Text()
 }

@@ -68,7 +68,6 @@ func parallel_minimax_chan(b *BitBoard, player int, depth int, pdepth int, col i
 				nb.modBoard(avail_moves[i], player, 1)
 				go parallel_minimax_chan(nb, player^3, depth-1, pdepth-1, avail_moves[i], result)
 			}
-			//not sure if this is correct or not -> maybe for cur_res := range result {...}
 			for i := 0; i < len(avail_moves); i++ {
 				cur_res := <-result
 				if cur_res.val < opt_val {
@@ -190,7 +189,6 @@ func parallel_minimax_chan_ab(b *BitBoard, player int, depth int, pdepth int, al
 				nb.modBoard(avail_moves[i], player, 1)
 				go parallel_minimax_chan_ab(nb, player^3, depth-1, pdepth-1, alpha, beta, avail_moves[i], result, false)
 			}
-			//TODO: This needs some way of knowing whether a result is coming from a "break" due to alpha/beta or not
 			for i := int(PERCENT_SEQ * float64(len(avail_moves))); i < len(avail_moves); i++ {
 				cur_result := <-result
 				if cur_result.val < opt_val {
@@ -218,7 +216,7 @@ func parallel_minimax_chan_ab(b *BitBoard, player int, depth int, pdepth int, al
 	}
 }
 
-func parallel(impl int, depth int, pdepth int, percent_ab float64) {
+func parallel(impl int, depth int, pdepth int, percent_ab float64, debug int) {
 	board := getBitBoard(6, 7)
 	game_res, player_res, cur_move, player := 0, 0, 0, 1
 	st = time.Now()
@@ -231,7 +229,9 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 			go parallel_minimax_chan(board, player, depth, pdepth, rand.Intn(7), ret)
 			result := <-ret
 			game_res, cur_move = result.val, result.opt_move
-			//fmt.Printf("Move %d is placing in column %d by player %d with value %d\n", moves_count, cur_move, player, game_res)
+			if debug == 1 {
+				fmt.Printf("Move %d is placing in column %d by player %d with value %d\n", moves_count, cur_move, player, game_res)
+			}
 			moves = append(moves, cur_move)
 			board.modBoard(cur_move, player, 1)
 			player ^= 3
@@ -249,7 +249,9 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 			go parallel_minimax_chan_ab(board, player, depth, pdepth, MIN, MAX, rand.Intn(7), ret, false)
 			result := <-ret
 			game_res, cur_move = result.val, result.opt_move
-			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
+			if debug == 1 {
+				fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, cur_move, player)
+			}
 			moves = append(moves, cur_move)
 			board.modBoard(cur_move, player, 1)
 			player ^= 3
@@ -258,11 +260,6 @@ func parallel(impl int, depth int, pdepth int, percent_ab float64) {
 		}
 		game_res, player_res = board.gameState(MAX, player)
 	}
-	// if player_res != 0 {
-	// 	fmt.Printf("Player %d Wins\n", player_res)
-	// } else {
-	// 	fmt.Printf("Game ended in a Tie\n")
-	// }
 	fmt.Printf("Total Moves Required: %d\n", len(moves))
 	fmt.Println(moves)
 	fmt.Printf("The game result %d for player %d. %d boards explored.\n", game_res, player_res, count)

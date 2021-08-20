@@ -99,7 +99,7 @@ func seq_minimax_ab(b *BitBoard, player int, alpha int, beta int, depth int) (in
 	}
 }
 
-func seq(impl int, depth int) {
+func seq(impl int, depth int, debug int) {
 	board := getBitBoard(6, 7)
 	st = time.Now()
 	game_res, player_res, move, player := 0, 0, 0, 1
@@ -109,7 +109,9 @@ func seq(impl int, depth int) {
 		g1, g2 := board.gameState(MAX, player)
 		for g1 == -1 && g2 == -1 {
 			game_res, move = seq_minimax(board, player, depth)
-			//fmt.Printf("Move %d is placing in column %d by player %d with value %d\n", moves_count, move, player, game_res)
+			if debug == 1 {
+				fmt.Printf("Move %d is placing in column %d by player %d with value %d\n", moves_count, move, player, game_res)
+			}
 			moves = append(moves, move)
 			board.modBoard(move, player, 1)
 			player ^= 3
@@ -122,7 +124,9 @@ func seq(impl int, depth int) {
 		g1, g2 := board.gameState(MAX, player)
 		for g1 == -1 && g2 == -1 {
 			game_res, move = seq_minimax_ab(board, player, MIN, MAX, depth)
-			//fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			if debug == 1 {
+				fmt.Printf("Move %d is placing in column %d by player %d\n", moves_count, move, player)
+			}
 			moves = append(moves, move)
 			board.modBoard(move, player, 1)
 			player ^= 3
