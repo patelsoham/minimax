@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"time"
 	"bufio"
+	"fmt"
 	"log"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -78,7 +78,6 @@ func (b *BitBoard) modBoard(col int, player int, delta int) {
 	b.heights &= ^(0xF << uint(col*4))
 	b.heights |= (cur_height << uint(col*4))
 }
-
 
 //Took this optimization of hasWon from https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md
 func (b *BitBoard) hasWon(player int) bool {
@@ -297,7 +296,7 @@ func (b *Board) modBoard(col int, player int, delta int) {
 	//fmt.Printf("After Placement: Col %d Player %d CurHeight %d\n\n", col, player, cur_height)
 	if cur_height > len(b.board) || cur_height < 0 {
 		fmt.Printf("Invalid Height at col %d: %d\n", col, cur_height)
-		
+
 		panic(cur_height)
 	}
 	b.heights &= ^(0xF << uint(col*4))

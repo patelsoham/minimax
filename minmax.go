@@ -33,6 +33,7 @@ const (
 	SEQ_AB      = iota
 	PARALLEL    = iota
 	PARALLEL_AB = iota
+	NUM_IMPL = iota
 )
 
 func main() {
@@ -43,15 +44,15 @@ func main() {
 	flag.IntVar(&pdepth, "pd", -1, "max depth computed in parallel")
 	flag.Float64Var(&ab_percent_sequential, "ab", 0.5, "percentage of the parallel AB solution done in sequential")
 	flag.Parse()
-	if pdepth == -1 {
+	if pdepth == -1 || pdepth > depth {
 		pdepth = depth
 	}
-	fmt.Printf("impl: %d, depth: %d, pdepth: %d, percentage: %.5f\n", impl, depth, pdepth, ab_percent_sequential)
+	fmt.Printf("impl: %d, depth: %d, pdepth: %d, PERCENT_SEQ: %.5f\n", impl, depth, pdepth, ab_percent_sequential)
 	st := time.Now()
 	switch {
 	case impl < 2:
 		seq(impl, depth)
-	case impl >= 2 && impl < 4:
+	case impl >= 2 && impl < NUM_IMPL:
 		parallel(impl, depth, pdepth, ab_percent_sequential)
 	default:
 		fmt.Println("Default case entered")
